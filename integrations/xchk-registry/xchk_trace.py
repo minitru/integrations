@@ -3,7 +3,7 @@ relying party may conclude about each. Apache-2.0.
 
     python xchk_trace.py record.json                      # key from the resolver's published keys; references resolved there
     python xchk_trace.py record.json --jwk expected.json  # offline: a pinned signer key
-    python xchk_trace.py record.json --bundle b.json      # offline: use this bundle for the one reference
+    python xchk_trace.py record.json --bundle b.json      # offline: the bundle for the record's single reference
     python xchk_trace.py record.json --allow-embedded-key # self-consistency only (exit 1): the record's own cnf.jwk
 
 The Trust Record is verified with agentrust-trace against a key the caller trusts: pinned, or the one the record's
@@ -123,6 +123,11 @@ def assess(reference: dict, bundle: dict | None) -> dict:
     if bundle is None:
         return {"reference": reference["id"], "resolves": False, "digest_matches": None, "bundle_verifies": None,
                 "disposition": None, "verdict": "approval-unconfirmed"}
+    if not isinstance(bundle, dict) or not isinstance(bundle.get("record"), dict):
+        # The resolver answered with something that is not a receipt bundle. That contradicts the approval the
+        # reference claims (the registry no longer serves the record) and must not stop the other references.
+        return {"reference": reference["id"], "resolves": True, "digest_matches": False, "bundle_verifies": False,
+                "disposition": None, "verdict": "approval-contradicted", "note": "resolved object is not a receipt bundle (no record)"}
     digest_matches = jcs_sha256(bundle["record"]) == reference["digest"]
     ok = bundle_verifies(bundle)
     disposition = bundle["record"].get("disposition")
@@ -158,7 +163,12 @@ def main(argv: list[str] | None = None) -> int:
     signer = verify_with_key_source(record, jwk, a.allow_embedded_key)
     out = {"trace_record": signer, "trace_record_verifies": signer["status"] == "verified", "references": []}
     refs = [r for r in record.get("references", []) if r.get("rel") == "approval-outcome"]
-    local = json.loads(Path(a.bundle).read_text(encoding="utf-8")) if a.bundle else None
+    local = None
+    if a.bundle:
+        if len(refs) != 1:
+            ap.error(f"--bundle supplies one bundle, but the record carries {len(refs)} approval-outcome references; "
+                     "resolve them online, or cut the record to one reference")
+        local = json.loads(Path(a.bundle).read_text(encoding="utf-8"))
     for ref in refs:
         bundle = local if local is not None else fetch_bundle(ref["resolver"], ref["id"])
         out["references"].append(assess(ref, bundle))

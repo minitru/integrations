@@ -1080,7 +1080,7 @@
       "name": "xChk registry",
       "package_name": "xChk registry",
       "vendor": "xChk",
-      "description": "A Trust Record per run from an agent-licensing registry, each approval-outcome reference resolving to a sealed receipt that verifies offline down to the approver's passkey assertion over the ask.",
+      "description": "A Trust Record per run from an agent-licensing registry; each approval-outcome reference resolves to a sealed receipt that verifies offline, down to the approver's passkey assertion.",
       "path": "integrations/xchk-registry",
       "url": "https://github.com/agentrust-io/integrations/tree/main/integrations/xchk-registry",
       "homepage": "https://in.xchk.io",

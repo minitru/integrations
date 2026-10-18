@@ -3,9 +3,9 @@ vendor: xChk
 integrates_with:
   - trace
 description: >-
-  A Trust Record per run from an agent-licensing registry, each approval-outcome
-  reference resolving to a sealed receipt that verifies offline down to the
-  approver's passkey assertion over the ask.
+  A Trust Record per run from an agent-licensing registry; each approval-outcome
+  reference resolves to a sealed receipt that verifies offline, down to the
+  approver's passkey assertion.
 maintainer:
   github: minitru
   email: sean@maclawran.ca

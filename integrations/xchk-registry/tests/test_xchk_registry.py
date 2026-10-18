@@ -109,3 +109,20 @@ def test_live_resolution_matches_the_committed_bundle():
     assert live is not None
     assert live["record"] == BUNDLE["record"]
     assert xchk_trace.assess(ref, live)["verdict"] == "approval-confirmed"
+
+
+def test_a_resolved_object_that_is_not_a_bundle_contradicts_without_aborting():
+    got = xchk_trace.assess(reference(), {"error": "gone"})
+    assert got["verdict"] == "approval-contradicted" and got["resolves"] is True and got["bundle_verifies"] is False
+    got = xchk_trace.assess(reference(), [])
+    assert got["verdict"] == "approval-contradicted"
+
+
+def test_bundle_flag_is_refused_for_a_record_with_several_references(tmp_path):
+    two = json.loads(json.dumps(RECORD))
+    two["references"] = two["references"] + [dict(reference(), id="0" * 64, digest="sha256:" + "0" * 64)]
+    rec = tmp_path / "two.json"
+    rec.write_text(json.dumps(two), encoding="utf-8")
+    with pytest.raises(SystemExit) as e:
+        xchk_trace.main([str(rec), "--bundle", str(EX / "01-approval-confirmed.bundle.json"), "--jwk", str(EX / "expected.json")])
+    assert e.value.code == 2
